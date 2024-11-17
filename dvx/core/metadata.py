@@ -2,8 +2,7 @@ from typing import Dict, Any
 import pandas as pd
 import os
 from datetime import datetime
-import hashlib
-from pathlib import Path
+import uuid
 
 
 class DocumentMetaData:
@@ -11,7 +10,6 @@ class DocumentMetaData:
     def __init__(self):
         self.columns = ['id', 'path', 'created_on', 'modified_on', 'size', 'title']
         self.df = pd.DataFrame(columns=self.columns)
-        
 
     def _parse_doc_type(self, path: str) -> str:
         if self._check_txt(path):
@@ -33,7 +31,7 @@ class DocumentMetaData:
         return path.endswith('.docx')
 
     def _create_id(self, path: str) -> str:
-        return hashlib.md5(os.path.basename(path).encode()).hexdigest()
+        return str(uuid.uuid4())
 
     def _get_datetime(self) -> str:
         return datetime.now().isoformat()
@@ -65,8 +63,6 @@ class DocumentMetaData:
         return self.df.iloc[idx].to_dict()
     
 
-
-
 def generate_metadata(folder_path : str, metadoc : DocumentMetaData = None) -> DocumentMetaData:
     if metadoc == None:
         metadoc = DocumentMetaData()
@@ -81,10 +77,12 @@ def generate_metadata(folder_path : str, metadoc : DocumentMetaData = None) -> D
 #print(generate_metadata('data').df)
 #metadoc = DocumentMetaData()
 #print(generate_metadata('data', metadoc).df)
-"""  metadoc = DocumentMetaData()
+"""
+metadoc = DocumentMetaData()
 metadoc.add_meta(r'data\MonoFormer.pdf')
 metadoc.add_meta(r'data\BIORAG.pdf')
 metadoc.add_meta(r'data\ARecipe For Building a Compliant Real Estate Chatbot.pdf')
-print(metadoc.df) """
+print(metadoc.df) 
+"""
 
 
