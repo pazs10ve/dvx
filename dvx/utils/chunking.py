@@ -1,6 +1,4 @@
-from typing import Any, Tuple
-import numpy as np
-from numpy.linalg import norm
+from similarity import SemanticScore
 from transformers import AutoTokenizer
 
 
@@ -11,37 +9,48 @@ def fixed_size_chunk(text: str, chunk_size: int = 50) -> list[str]:
     return text
 
 
-def sentence_based_chunk(text : str) -> list[str]:
+def sentence_based_chunk(text: str) -> list[str]:
     """Split text on the basis of sentences"""
     text = text.split('.')
-    text = [''.join(t)+'.' for t in text]
+    text = [''.join(t.strip()) + '.' for t in text if t.strip()]  # Added strip() to handle whitespace
     return text
 
 
-def paragraph_based_chunk(text : str) -> list[str]:
+def paragraph_based_chunk(text: str) -> list[str]:
     """Split text on the basis of paragraphs"""
     text = text.split('\n\n')
-    return text
+    return [t.strip() for t in text if t.strip()]  # Added strip() to handle whitespace
 
 
-def semantic_similarity_score(sentence1 : str, 
-                              sentence2 : str, 
-                              tokenizer : str = 'bert-base-uncased', 
-                              metric : str = 'cosine') -> int:
+def semantic_similarity_score(sentence1: str, 
+                            sentence2: str, 
+                            tokenizer: str = 'bert-base-uncased', 
+                            metric: str = 'cosine') -> float:  # Changed return type to float
     score = SemanticScore(tokenizer=tokenizer, metric=metric)
     score = score.calculate(sentence1, sentence2)
     return score
 
 
-def semantic_chunk(text : str, 
-                   tokenizer : str = 'bert-base-uncased', 
-                   metric : str = 'cosine',
-                   dot_product_threshold : int = 1000, 
-                   cosine_threshold : int = 0.5, 
-                   l1_threshold : int = 10000,
-                   l2_threshold : int = 1000,
-                   chunk_size : int = 5) -> list[str]:
-    """Split text on the basis of semantics"""
+def semantic_chunk(text: str, 
+                  tokenizer: str = 'bert-base-uncased', 
+                  metric: str = 'cosine',
+                  dot_product_threshold: float = 1000.0,
+                  cosine_threshold: float = 0.5, 
+                  l1_threshold: float = 10000.0,
+                  l2_threshold: float = 1000.0,
+                  chunk_size: int = 512) -> list[str]: 
+    """
+    Split text on the basis of semantics
+    
+    Args:
+        text: Input text to be chunked
+        tokenizer: Name of the pre-trained tokenizer
+        metric: Similarity metric to use ('dot_product', 'cosine', 'l1', 'l2')
+        threshold: Threshold values for different metrics
+        chunk_size: Maximum number of tokens in each chunk
+    """
+    if not text.strip():
+        return []
 
     if metric == 'dot_product':
         threshold = dot_product_threshold
@@ -52,113 +61,55 @@ def semantic_chunk(text : str,
     elif metric == 'l2':
         threshold = l2_threshold
     else:
-        raise 'Not a valid similarity metric provided.'
+        raise ValueError(f'Invalid similarity metric: {metric}')
 
-    text = sentence_based_chunk(text)
+    tok = AutoTokenizer.from_pretrained(tokenizer)
+    calc = SemanticScore(tokenizer=tokenizer, metric=metric)
+    
+    sentences = sentence_based_chunk(text)
+    if not sentences:
+        return []
 
     chunks = []
-    calc = SemanticScore(tokenizer=tokenizer, metric=metric)
-    i = 0
-    while i < len(text)-1:
-        j = i+1
-        chunk = text[i]
-        while j < len(text):
-            score = calc.calculate(text[i], text[j])
-            if score > threshold and len(chunk) < chunk_size:
-                chunk += text[j]
-                j += 1
-            else:
-                i = j+1 
-                j = i+1
-                if chunk != '':
-                    chunks.append(chunk)
-                    chunk = text[i] if i < len(text) else ''
+    current_chunk = []
+    current_tokens = 0
+    
+    for i in range(len(sentences)):
+        if not sentences[i].strip():
+            continue
+            
+        sentence_tokens = len(tok.encode(sentences[i]))
+        
+        if not current_chunk:
+            current_chunk.append(sentences[i])
+            current_tokens = sentence_tokens
+            continue
+            
+        if current_tokens + sentence_tokens > chunk_size:
+            chunks.append(' '.join(current_chunk))
+            current_chunk = [sentences[i]]
+            current_tokens = sentence_tokens
+            continue
+            
+        score = calc.calculate(current_chunk[-1], sentences[i])
+        
+        if metric in ['l1', 'l2']:
+            is_similar = score < threshold
+        else:
+            is_similar = score > threshold
+            
+        if is_similar:
+            current_chunk.append(sentences[i])
+            current_tokens += sentence_tokens
+        else:
+            chunks.append(' '.join(current_chunk))
+            current_chunk = [sentences[i]]
+            current_tokens = sentence_tokens
+    
+    if current_chunk:
+        chunks.append(' '.join(current_chunk))
 
     return chunks
-
-
-def multi_modal_chunk(text : str, images = None, tables = None) -> Any:
-    """Split text, separates images and tables"""
-    pass 
-
-
-class SemanticScore:
-    def __init__(self,
-        tokenizer : str = 'bert-base-uncased',
-        metric : str = 'cosine',
-        max_length : str = 100
-    ) -> None:
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
-        self.max_length = max_length
-        
-        if metric in ['dot_product', 'cosine', 'l1', 'l2']:
-            self.metric = metric
-        else:
-            raise 'Not a valid metric provided'
-    
-    def dot_product(self, A : np.ndarray, B : np.ndarray) -> int:
-        """ Dot Product is the sum after element wise multiplication of the arrays. """
-        assert (A.shape == B.shape), 'The shape of the arrays should be same'
-        return np.sum(A * B)
-
-    def cosine(self, A : np.ndarray, B : np.ndarray) -> int:
-        """ Cosine similarity is defined as Dot Product normalized by the multiplication of the norms of both tensors
-
-                cosine similarity = A . B / |A| |B| 
-        """
-        assert (A.shape == B.shape), 'The shape of the arrays should be same'
-        assert (norm(A) != 0 and norm(B) != 0), 'Division by zero is not possible!'
-        return self.dot_product(A, B) / (norm(A)*norm(B))
-
-
-    def l1(self, A : np.ndarray, B : np.ndarray) -> int:
-        """ L1 norm is the sum of absolute element-wise difference """
-        assert (A.shape == B.shape), 'The shape of the arrays should be same'
-        return np.sum(np.abs(A-B))
-
-    def l2(self, A : np.ndarray, B : np.ndarray) -> int:
-        """ L2 norm is the root of sum of squared difference between elements"""
-        assert (A.shape == B.shape), 'The shape of the arrays should be same'
-        return np.sqrt(np.sum((A-B)**2))
-
-    def calculate_score(self, A : np.ndarray, B : np.ndarray) -> int:
-        assert (A.shape == B.shape), 'The shape of the arrays should be same'
-        if self.metric == 'dot_product':
-            return self.dot_product(A, B)
-        elif self.metric == 'cosine':
-            return self.cosine(A, B)
-        elif self.metric == 'l1':
-            return self.l1(A, B)
-        elif self.metric == 'l2':
-            return self.l2(A, B)
-
-
-    def calculate(self, A : str, B : str) -> int:
-        #print(A, B)
-        A, B = self.tokenizer(A), self.tokenizer(B)
-        A, B = self.padding(A['input_ids'], B['input_ids'])
-        return self.calculate_score(A, B)
-        
-
-    def padding(self, A : np.ndarray, B : np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-
-        if len(A) > self.max_length:
-            diff1 = np.abs(len(A) - self.max_length)
-            A = A[:self.max_length]
-        elif len(A) < self.max_length:
-            diff1 = np.abs(len(A) - self.max_length)
-            pad1 = np.zeros(diff1)
-            A = np.concat((A, pad1))
-
-        if len(B) > self.max_length:
-            diff2 = np.abs(len(B) - self.max_length)
-            B = B[:self.max_length]
-        elif len(B) < self.max_length:
-            diff2 = np.abs(len(B) - self.max_length)
-            pad2 = np.zeros(diff2)
-            B = np.concat((B, pad2))
-        
-        return A, B
 
 
 sample_text = """
@@ -220,10 +171,10 @@ print(score.calculate(sentence1, sentence2))"""
 #tokenizer = 'bert-base-uncased'
 #metric = 'cosine'
 #print(semantic_similarity_score(sentence1, sentence2, tokenizer=tokenizer, metric=metric))
-chunks = semantic_chunk(sample_text)
 
-#print(chunks)
-for chunk in enumerate(chunks):
-    
-    print(f'chunk {chunk[0]+1}')
-    print(chunk[1], '\n---\n')
+
+chunks = semantic_chunk(sample_text, metric='cosine')
+for i, chunk in enumerate(chunks):
+    print(f'\nChunk {i+1}:')
+    print(chunk)
+    print('---')
