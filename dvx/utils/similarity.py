@@ -8,7 +8,7 @@ class SemanticScore:
     def __init__(self,
         tokenizer: str = 'bert-base-uncased',
         metric: str = 'cosine',
-        max_length: int = 100  # Changed type hint to int
+        max_length: int = 100 
     ) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         self.max_length = max_length
@@ -21,7 +21,7 @@ class SemanticScore:
     def dot_product(self, A: np.ndarray, B: np.ndarray) -> float:
         """Dot Product is the sum after element wise multiplication of the arrays."""
         assert A.shape == B.shape, 'Arrays must have the same shape'
-        return float(np.sum(A * B))  # Convert to float for consistency
+        return float(np.sum(A * B)) 
 
     def cosine(self, A: np.ndarray, B: np.ndarray) -> float:
         """
@@ -57,11 +57,9 @@ class SemanticScore:
         return metric_functions[self.metric](A, B)
 
     def calculate(self, A: str, B: str) -> float:
-        # Tokenize and get input IDs
         A_encoded = self.tokenizer(A, return_tensors='np')['input_ids'].squeeze()
         B_encoded = self.tokenizer(B, return_tensors='np')['input_ids'].squeeze()
         
-        # Apply padding
         A_padded, B_padded = self.padding(A_encoded, B_encoded)
         
         return self.calculate_score(A_padded, B_padded)

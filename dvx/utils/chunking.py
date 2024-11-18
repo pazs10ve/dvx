@@ -1,6 +1,4 @@
 from similarity import SemanticScore
-from transformers import AutoTokenizer
-
 
 def fixed_size_chunk(text: str, chunk_size: int = 50) -> list[str]:
     """Split text into chunks of a fixed size"""
@@ -12,33 +10,33 @@ def fixed_size_chunk(text: str, chunk_size: int = 50) -> list[str]:
 def sentence_based_chunk(text: str) -> list[str]:
     """Split text on the basis of sentences"""
     text = text.split('.')
-    text = [''.join(t.strip()) + '.' for t in text if t.strip()]  # Added strip() to handle whitespace
+    text = [''.join(t.strip()) + '.' for t in text if t.strip()] 
     return text
 
 
 def paragraph_based_chunk(text: str) -> list[str]:
     """Split text on the basis of paragraphs"""
     text = text.split('\n\n')
-    return [t.strip() for t in text if t.strip()]  # Added strip() to handle whitespace
+    return [t.strip() for t in text if t.strip()] 
 
 
 def semantic_similarity_score(sentence1: str, 
                             sentence2: str, 
                             tokenizer: str = 'bert-base-uncased', 
-                            metric: str = 'cosine') -> float:  # Changed return type to float
+                            metric: str = 'cosine') -> float:  
     score = SemanticScore(tokenizer=tokenizer, metric=metric)
     score = score.calculate(sentence1, sentence2)
     return score
 
 
-def semantic_chunk(text: str, 
+def semantic_sentence_chunking(text: str, 
                   tokenizer: str = 'bert-base-uncased', 
                   metric: str = 'cosine',
                   dot_product_threshold: float = 1000.0,
                   cosine_threshold: float = 0.5, 
                   l1_threshold: float = 10000.0,
                   l2_threshold: float = 1000.0,
-                  chunk_size: int = 512) -> list[str]: 
+                  chunk_size: int = 5) -> list[str]:
     """
     Split text on the basis of semantics
     
@@ -46,8 +44,8 @@ def semantic_chunk(text: str,
         text: Input text to be chunked
         tokenizer: Name of the pre-trained tokenizer
         metric: Similarity metric to use ('dot_product', 'cosine', 'l1', 'l2')
-        threshold: Threshold values for different metrics
-        chunk_size: Maximum number of tokens in each chunk
+        *_threshold: Threshold values for different metrics
+        chunk_size: Maximum size of each chunk in sentences
     """
     if not text.strip():
         return []
@@ -63,32 +61,23 @@ def semantic_chunk(text: str,
     else:
         raise ValueError(f'Invalid similarity metric: {metric}')
 
-    tok = AutoTokenizer.from_pretrained(tokenizer)
-    calc = SemanticScore(tokenizer=tokenizer, metric=metric)
-    
     sentences = sentence_based_chunk(text)
     if not sentences:
         return []
 
     chunks = []
+    calc = SemanticScore(tokenizer=tokenizer, metric=metric)
+    
     current_chunk = []
-    current_tokens = 0
+    current_size = 0
     
     for i in range(len(sentences)):
         if not sentences[i].strip():
             continue
             
-        sentence_tokens = len(tok.encode(sentences[i]))
-        
         if not current_chunk:
             current_chunk.append(sentences[i])
-            current_tokens = sentence_tokens
-            continue
-            
-        if current_tokens + sentence_tokens > chunk_size:
-            chunks.append(' '.join(current_chunk))
-            current_chunk = [sentences[i]]
-            current_tokens = sentence_tokens
+            current_size = 1
             continue
             
         score = calc.calculate(current_chunk[-1], sentences[i])
@@ -98,13 +87,13 @@ def semantic_chunk(text: str,
         else:
             is_similar = score > threshold
             
-        if is_similar:
+        if is_similar and current_size < chunk_size:
             current_chunk.append(sentences[i])
-            current_tokens += sentence_tokens
+            current_size += 1
         else:
             chunks.append(' '.join(current_chunk))
             current_chunk = [sentences[i]]
-            current_tokens = sentence_tokens
+            current_size = 1
     
     if current_chunk:
         chunks.append(' '.join(current_chunk))
@@ -173,7 +162,7 @@ print(score.calculate(sentence1, sentence2))"""
 #print(semantic_similarity_score(sentence1, sentence2, tokenizer=tokenizer, metric=metric))
 
 
-chunks = semantic_chunk(sample_text, metric='cosine')
+chunks = semantic_sentence_chunking(sample_text, metric='cosine')
 for i, chunk in enumerate(chunks):
     print(f'\nChunk {i+1}:')
     print(chunk)
