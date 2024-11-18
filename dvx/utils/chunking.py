@@ -29,7 +29,7 @@ def semantic_similarity_score(sentence1: str,
     return score
 
 
-def semantic_sentence_chunking(text: str, 
+def semantic_sentence_chunk(text: str, 
                   tokenizer: str = 'bert-base-uncased', 
                   metric: str = 'cosine',
                   dot_product_threshold: float = 1000.0,
@@ -162,8 +162,8 @@ print(score.calculate(sentence1, sentence2))"""
 #print(semantic_similarity_score(sentence1, sentence2, tokenizer=tokenizer, metric=metric))
 
 
-chunks = semantic_sentence_chunking(sample_text, metric='cosine')
+"""chunks = semantic_sentence_chunking(sample_text, metric='cosine')
 for i, chunk in enumerate(chunks):
     print(f'\nChunk {i+1}:')
     print(chunk)
-    print('---')
+    print('---')"""
