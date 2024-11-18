@@ -40,11 +40,41 @@ def semantic_chunk(text : str,
                    cosine_threshold : int = 0.5, 
                    l1_threshold : int = 10000,
                    l2_threshold : int = 1000,
-                   chunk_size : int = 300) -> list[str]:
+                   chunk_size : int = 5) -> list[str]:
     """Split text on the basis of semantics"""
+
+    if metric == 'dot_product':
+        threshold = dot_product_threshold
+    elif metric == 'cosine':
+        threshold = cosine_threshold
+    elif metric == 'l1':
+        threshold = l1_threshold
+    elif metric == 'l2':
+        threshold = l2_threshold
+    else:
+        raise 'Not a valid similarity metric provided.'
+
     text = sentence_based_chunk(text)
-    #combine sentences together until the chunk size as long as the semantic score is more than metric_threshold
-    return text
+
+    chunks = []
+    calc = SemanticScore(tokenizer=tokenizer, metric=metric)
+    i = 0
+    while i < len(text)-1:
+        j = i+1
+        chunk = text[i]
+        while j < len(text):
+            score = calc.calculate(text[i], text[j])
+            if score > threshold and len(chunk) < chunk_size:
+                chunk += text[j]
+                j += 1
+            else:
+                i = j+1 
+                j = i+1
+                if chunk != '':
+                    chunks.append(chunk)
+                    chunk = text[i] if i < len(text) else ''
+
+    return chunks
 
 
 def multi_modal_chunk(text : str, images = None, tables = None) -> Any:
@@ -55,13 +85,13 @@ def multi_modal_chunk(text : str, images = None, tables = None) -> Any:
 class SemanticScore:
     def __init__(self,
         tokenizer : str = 'bert-base-uncased',
-        metric : str = 'dot_product',
+        metric : str = 'cosine',
         max_length : str = 100
     ) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         self.max_length = max_length
         
-        if metric in ['dot_product', 'cosine', 'l1', 'l2', 'hadamard']:
+        if metric in ['dot_product', 'cosine', 'l1', 'l2']:
             self.metric = metric
         else:
             raise 'Not a valid metric provided'
@@ -104,7 +134,7 @@ class SemanticScore:
 
 
     def calculate(self, A : str, B : str) -> int:
-        print(A, B)
+        #print(A, B)
         A, B = self.tokenizer(A), self.tokenizer(B)
         A, B = self.padding(A['input_ids'], B['input_ids'])
         return self.calculate_score(A, B)
@@ -185,7 +215,15 @@ metric = 'l1'
 
 score = SemanticScore(tokenizer=tokenizer, metric=metric)
 print(score.calculate(sentence1, sentence2))"""
-tokenizer = 'bert-base-uncased'
-metric = 'dot_product'
-print(semantic_similarity_score(sentence1, sentence2, tokenizer=tokenizer, metric=metric))
 
+
+#tokenizer = 'bert-base-uncased'
+#metric = 'cosine'
+#print(semantic_similarity_score(sentence1, sentence2, tokenizer=tokenizer, metric=metric))
+chunks = semantic_chunk(sample_text)
+
+#print(chunks)
+for chunk in enumerate(chunks):
+    
+    print(f'chunk {chunk[0]+1}')
+    print(chunk[1], '\n---\n')
