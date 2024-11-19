@@ -1,4 +1,5 @@
-from similarity import SemanticScore
+from dvx.utils.similarity import SemanticScore
+
 
 def fixed_size_chunk(text: str, chunk_size: int = 50) -> list[str]:
     """Split text into chunks of a fixed size"""
