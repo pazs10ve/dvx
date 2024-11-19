@@ -51,7 +51,7 @@ def read(file_path: str) -> str:
     return remove_garbled_text(all_text)
 
 
-path = r'data\Research Proposals.docx'
+"""path = r'data\Research Proposals.docx'
 content = read(path)
 
 chunks = semantic_sentence_chunk(content, metric = 'cosine', cosine_threshold=0.3)
@@ -59,3 +59,4 @@ chunks = semantic_sentence_chunk(content, metric = 'cosine', cosine_threshold=0.
 print(f"Total Chunks: {len(chunks)}\n")
 for idx, chunk in enumerate(chunks, start=1):
     print(f"Chunk {idx}:\n\n{chunk}\n")
+"""

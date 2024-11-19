@@ -81,7 +81,7 @@ def read(file_path: str) -> str:
         return remove_garbled_text(all_text)
 
 
-path = r'data\A GENERATIVE INFINITE GAME OF SIMULATION.pdf'
+"""path = r'data\A GENERATIVE INFINITE GAME OF SIMULATION.pdf'
 content = read(path)
 chunks = semantic_sentence_chunk(content, metric = 'cosine', cosine_threshold=0.3)
 
@@ -89,3 +89,4 @@ print(f"Total Chunks: {len(chunks)}\n")
 for idx, chunk in enumerate(chunks, start=1):
     chunk = clean(chunk)
     print(f"Chunk {idx}:\n\n{chunk}\n")
+"""
