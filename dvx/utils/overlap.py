@@ -60,5 +60,5 @@ You can also filter models according to model sizes, proprietary or open-source 
    The main trick is to unify the image and text representation and feed it to a text decoder for generation
  """
 
-text = semantic_sentence_overlap(text2, text1)
-print(text)
+#text = semantic_sentence_overlap(text2, text1)
+#print(text)

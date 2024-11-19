@@ -19,7 +19,7 @@ def remove_garbled_text(text: str) -> str:
     return text
 
 
-def read_txt(file_path: str) -> str:
+def read(file_path: str) -> str:
     """
     Extracts and cleans the entire text from a TXT file while preserving paragraph structure.
     
@@ -36,7 +36,7 @@ def read_txt(file_path: str) -> str:
 
 
 """path = r'data\message.txt'
-content = read_txt(path)
+content = read(path)
 
 chunks = semantic_sentence_chunk(content)
 print(f"Total Chunks: {len(chunks)}\n")

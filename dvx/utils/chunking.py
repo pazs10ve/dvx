@@ -148,8 +148,8 @@ field that incorporates the latest technological advancements.
 #print(chunks)
 #for chunk in chunks:
  #   print(chunk, '\n---\n')
-sentence1 = "Big data refers to large, diverse sets of information that grow at ever-increasing rates."
-sentence2 = "My love for you is undying."
+#sentence1 = "Big data refers to large, diverse sets of information that grow at ever-increasing rates."
+#entence2 = "My love for you is undying."
 #print(semantic_similarity_score(sentence1, sentence2))
 """tokenizer = 'bert-base-uncased'
 metric = 'l1'
