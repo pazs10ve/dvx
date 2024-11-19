@@ -1,7 +1,7 @@
 import PyPDF2
 import re
 from dvx.utils.clean import clean
-from dvx.utils.chunking import paragraph_based_chunk, sentence_based_chunk, semantic_sentence_chunk
+from dvx.utils.chunking import sentence_based_chunk, fixed_size_chunk, paragraph_based_chunk, semantic_sentence_chunk
 
 
 def is_prose_line(line: str) -> bool:

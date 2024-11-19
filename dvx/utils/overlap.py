@@ -1,5 +1,5 @@
 from typing import Tuple
-from chunking import sentence_based_chunk, paragraph_based_chunk, semantic_sentence_chunk
+from dvx.utils.chunking import sentence_based_chunk, paragraph_based_chunk, semantic_sentence_chunk
 
 def fixed_size_overlap(text1 : str, text2 : str, overlap_size : int = 20) -> Tuple[str, str]:
     """Return overlapping chunks of fixed dimensions with a specified overlap token size."""
